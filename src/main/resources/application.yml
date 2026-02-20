@@ -66,3 +66,28 @@ app:
   kafka:
     topics:
       task-submission: tasks.main
+  rate-limiting:
+    enabled: true
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+    limits:
+      - path: /api/tasks
+        method: POST
+        replenish-rate: 10
+        burst-capacity: 20
+        requested-tokens: 1
+
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: rate-limit-buckets
+      url: /api/tasks
+      http-response-body: '{"error": "Too Many Requests", "message": "Rate limit exceeded"}'
+      rate-limits:
+        - cache-key: "getRemoteAddr()" # Using IP as a fallback for user ID if auth is not implemented
+          bandwidths:
+            - capacity: 20
+              refill-speed: interval
+              time: 1
+              unit: minutes
