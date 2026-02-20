@@ -2,9 +2,15 @@ package com.example.taskservice.infrastructure.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 @Slf4j
 @Component
@@ -18,7 +24,15 @@ public class TaskProducer {
 
     public void sendTaskEvent(TaskEvent event) {
         log.info("Publishing task event for task ID: {}", event.getTaskId());
-        kafkaTemplate.send(topic, event.getTaskId().toString(), event)
+        
+        String correlationId = MDC.get("correlationId");
+        ProducerRecord<String, TaskEvent> record = new ProducerRecord<>(topic, event.getTaskId().toString(), event);
+        
+        if (correlationId != null) {
+            record.headers().add(new RecordHeader("correlationId", correlationId.getBytes(StandardCharsets.UTF_8)));
+        }
+
+        kafkaTemplate.send(record)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
                         log.info("Successfully published task ID: {} to partition: {}", 
