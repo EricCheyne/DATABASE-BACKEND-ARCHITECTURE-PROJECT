@@ -3,19 +3,33 @@ spring:
     name: task-service
   
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/taskdb}
-    username: ${DATABASE_USER:postgres}
-    password: ${DATABASE_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
+    primary:
+      url: ${DATABASE_PRIMARY_URL:jdbc:postgresql://localhost:5432/taskdb}
+      username: ${DATABASE_USER:postgres}
+      password: ${DATABASE_PASSWORD:postgres}
+      driver-class-name: org.postgresql.Driver
+    replica:
+      url: ${DATABASE_REPLICA_URL:jdbc:postgresql://localhost:5433/taskdb}
+      username: ${DATABASE_USER:postgres}
+      password: ${DATABASE_PASSWORD:postgres}
+      driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    url: ${DATABASE_PRIMARY_URL:jdbc:postgresql://localhost:5432/taskdb}
+    user: ${DATABASE_USER:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
